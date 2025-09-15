@@ -149,11 +149,7 @@ func (t *Task) IsExpired() bool {
 }
 
 func (t *Task) UnmarshalPayload(target interface{}) error {
-	if err := json.Unmarshal(t.Payload, &target); err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(t.Payload, &target)
 }
 
 func (t *Task) String() string {

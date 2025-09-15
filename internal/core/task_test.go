@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -115,4 +116,50 @@ func TestTask_IsValid(t *testing.T) {
 		})
 	}
 
+}
+
+func TestTask_JSONSerialization_RoundTrip(t *testing.T) {
+	originalPayload := map[string]interface{}{"name": "Marine", "race": "Terran", "health": 45, "damage": 6, "is_upgraded": true}
+
+	task, err := NewTask(CPU_INTENSIVE, originalPayload)
+	if err != nil {
+		t.Fatalf("Failed to creating task: %v", err)
+	}
+
+	var unmarshaled map[string]interface{}
+
+	err = task.UnmarshalPayload(&unmarshaled)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal payload: %v", err)
+	}
+
+	if unmarshaled["name"] != originalPayload["name"] {
+		t.Errorf("Name mismatch: expected %v, got %v", originalPayload["name"], unmarshaled["name"])
+	}
+
+	if unmarshaled["health"] != float64(45) {
+		t.Errorf("Health mismatch: expected 45, got %v", unmarshaled["health"])
+	}
+}
+
+func TestTask_IsExpired(t *testing.T) {
+	task, _ := NewTask(CPU_INTENSIVE, map[string]string{"test": "data"})
+	task.Timeout = 1 * time.Millisecond
+
+	time.Sleep(2 * time.Millisecond)
+
+	if !task.IsExpired() {
+		t.Error("Task should be expired but isn't")
+	}
+}
+
+func TestTaskResult_SetError(t *testing.T) {
+	result := NewTaskResult("test-123", "worker-1", COMPLETED)
+
+	testErr := fmt.Errorf("reactor meltdown")
+	result.SetError(testErr)
+
+	if result.Status != FAILED {
+		t.Errorf("Expected status FAILED, got %v", result.Status)
+	}
 }
